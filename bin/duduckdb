@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from argparse import ArgumentParser, BooleanOptionalAction
+import logging
+from datetime import datetime
+
+from duduckdb.duduckdb import DUDB
+
+
+def parse_args():
+    """Parses the arguments to the script."""
+    arg_parser = ArgumentParser(prog='duduckdb', description='Summarize '
+                                'disk usage information contained in parquet '
+                                'file.')
+    arg_parser.add_argument('fn', help='Path to parquet file')
+    arg_parser.add_argument('-d', '--max-depth', help='Print total for a '
+                            'directory only if it is as most N levels below '
+                            'the root of the file index', default=1, type=int)
+    arg_parser.add_argument('--disk-usage', help='Include the disk usage',
+                            action=BooleanOptionalAction, default=True)
+    arg_parser.add_argument('--inodes', help='Include inode count. An inode '
+                            'is a general filesystem object, the inode count '
+                            'includes files and directories among others',
+                            action=BooleanOptionalAction, default=True)
+    arg_parser.add_argument('--human-readable', help='Print sizes in a '
+                            'human-readable format', action='store_true')
+    arg_parser.add_argument('--si-units', help='Use SI units, i.e. '
+                            'human-readable sizes are reported in powers of '
+                            '10 (MB, GB) instead of powers of 2 (MiB, GiB)',
+                            action='store_true')
+    arg_parser.add_argument('--top-directory', help='Consider the provided '
+                            'directory as the top directory, defaults to the '
+                            'root of the indexed tree', default='')
+    arg_parser.add_argument('--per-user', help='Print a separate line '
+                            'indicating usage per user (based on ownership)',
+                            action='store_true')
+
+    input_timefmt = '%Y-%m-%d'
+    arg_parser.add_argument('--older-than', help='Only take files/directories'
+                            ' of which the timestamp is older than the '
+                            'provided value (format: '
+                            f'{input_timefmt.replace("%", "%%")}) into '
+                            'account', default=None)
+    arg_parser.add_argument('--newer-than', help='Only take files/directories'
+                            ' of which the timestamp is newer than the '
+                            'provided value (format: '
+                            f'{input_timefmt.replace("%", "%%")}) into '
+                            'account', default=None)
+    arg_parser.add_argument('--timestamp-type', help='The type of timestamp '
+                            '(access, modification, or creation time)',
+                            choices=['atime', 'mtime', 'ctime'],
+                            default='atime')
+    arg_parser.add_argument('--nthreads', help='Number of duckdb threads',
+                            type=int, default=4)
+    arg_parser.add_argument('--debug', help='Set log level to debug',
+                            action='store_true')
+    args = arg_parser.parse_args()
+
+    # Process timestamps
+    if args.older_than is None:
+        args.older_than = datetime.now()
+    else:
+        args.older_than = datetime.strptime(args.older_than, input_timefmt)
+    if args.newer_than is None:
+        args.newer_than = datetime.strptime('1970-01-01', input_timefmt)
+    else:
+        args.newer_than = datetime.strptime(args.newer_than, input_timefmt)
+
+    # Set up logging
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+
+    return args
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    db = DUDB(args.fn, debug=args.debug, nthreads=args.nthreads)
+    metrics = []
+    if args.disk_usage:
+        metrics.append('size')
+    if args.inodes:
+        metrics.append('inodes')
+    db.report_du(top_directory=args.top_directory, per_user=args.per_user,
+                 older_than=args.older_than, newer_than=args.newer_than,
+                 max_depth=args.max_depth, metrics=metrics,
+                 human_readable=args.human_readable, si_units=args.si_units,
+                 timestamp_type=args.timestamp_type)
