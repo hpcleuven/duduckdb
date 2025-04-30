@@ -111,9 +111,9 @@ class DUDB(object):
             assert label in labels, f'Required column {label} is missing.'
 
         # Add a column representing filesystem depth by counting "/"
-        top_directory = top_directory.rstrip(os.sep)
-        top_directory_depth = top_directory.count(os.sep)
-        if top_directory == "":
+        top_directory_stripped = top_directory.rstrip(os.sep)
+        top_directory_depth = top_directory_stripped.count(os.sep)
+        if top_directory_stripped == "":
             top_directory_depth += 1
         self.conn.execute("alter table index add if not exists depth "
                           "uinteger;")
@@ -121,7 +121,7 @@ class DUDB(object):
                           "len(path) - len(replace(path, '/', '')) "
                           f"+ {top_directory_depth};")
         # Special case of root directory
-        if top_directory == "":
+        if top_directory_stripped == "":
             query = "update index set depth = 0 where path = '.' or path = '';"
             self.conn.execute(query)
 
