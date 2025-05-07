@@ -16,7 +16,7 @@ def parse_args():
     arg_parser.add_argument('fn', help='Path to parquet file')
     arg_parser.add_argument('-d', '--max-depth', help='Print total for a '
                             'directory only if it is as most N levels below '
-                            'the root of the file index, defaults to 1',
+                            'the top directory, defaults to 1',
                             default=1, type=int)
     arg_parser.add_argument('--disk-usage', help='Include the disk usage',
                             action=BooleanOptionalAction, default=True)

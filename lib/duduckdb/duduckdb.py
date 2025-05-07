@@ -114,12 +114,12 @@ class DUDB(object):
         top_directory_stripped = top_directory.rstrip(os.sep)
         top_directory_depth = top_directory_stripped.count(os.sep)
         if top_directory_stripped == "":
-            top_directory_depth += 1
+            top_directory_depth -= 1
         self.conn.execute("alter table index add if not exists depth "
-                          "uinteger;")
+                          "integer;")
         self.conn.execute("update index set depth = "
                           "len(path) - len(replace(path, '/', '')) "
-                          f"+ {top_directory_depth};")
+                          f"- {top_directory_depth};")
         # Special case of root directory
         if top_directory_stripped == "":
             query = "update index set depth = 0 where path = '.' or path = '';"
