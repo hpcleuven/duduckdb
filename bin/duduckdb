@@ -15,8 +15,13 @@ def parse_args():
                                 'file.')
     arg_parser.add_argument('fn', help='Path to parquet file')
     arg_parser.add_argument('-d', '--max-depth', help='Print total for a '
-                            'directory only if it is as most N levels below '
-                            'the root of the file index', default=1, type=int)
+                            'directory only if it is at most N levels below '
+                            'the top directory, defaults to 1',
+                            default=1, type=int)
+    arg_parser.add_argument('--min-depth', help='Print total for a '
+                            'directory only if it is at least N levels above '
+                            'the top directory, defaults to 0',
+                            default=0, type=int)
     arg_parser.add_argument('--disk-usage', help='Include the disk usage',
                             action=BooleanOptionalAction, default=True)
     arg_parser.add_argument('--inodes', help='Include inode count. An inode '
@@ -31,7 +36,9 @@ def parse_args():
                             action='store_true')
     arg_parser.add_argument('--top-directory', help='Consider the provided '
                             'directory as the top directory, defaults to the '
-                            'root of the indexed tree', default='')
+                            'root of the indexed tree. The depth is '
+                            'counted from the provided top directory',
+                            default='')
     arg_parser.add_argument('--per-user', help='Print a separate line '
                             'indicating usage per user (based on ownership)',
                             action='store_true')
@@ -84,6 +91,7 @@ if __name__ == '__main__':
         metrics.append('inodes')
     db.report_du(top_directory=args.top_directory, per_user=args.per_user,
                  older_than=args.older_than, newer_than=args.newer_than,
-                 max_depth=args.max_depth, metrics=metrics,
+                 max_depth=args.max_depth, min_depth=args.min_depth,
+                 metrics=metrics,
                  human_readable=args.human_readable, si_units=args.si_units,
                  timestamp_type=args.timestamp_type)

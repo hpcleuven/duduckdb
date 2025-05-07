@@ -94,7 +94,7 @@ class DUDB(object):
         logging.debug(f'... done, took {time.time() - tstart:.3f}s')
 
     def report_du(self, top_directory="", per_user=False, older_than=None,
-                  newer_than=None, max_depth=1, metrics=['size'],
+                  newer_than=None, max_depth=1, min_depth=0, metrics=['size'],
                   human_readable=False, si_units=False,
                   timestamp_type='atime', suppress_output=False):
         # Check that required columns are present
@@ -111,17 +111,17 @@ class DUDB(object):
             assert label in labels, f'Required column {label} is missing.'
 
         # Add a column representing filesystem depth by counting "/"
-        top_directory = top_directory.rstrip(os.sep)
-        top_directory_depth = top_directory.count(os.sep)
-        if top_directory == "":
-            top_directory_depth += 1
+        top_directory_stripped = top_directory.rstrip(os.sep)
+        top_directory_depth = top_directory_stripped.count(os.sep)
+        if top_directory_stripped == "":
+            top_directory_depth -= 1
         self.conn.execute("alter table index add if not exists depth "
-                          "uinteger;")
+                          "integer;")
         self.conn.execute("update index set depth = "
                           "len(path) - len(replace(path, '/', '')) "
-                          f"+ {top_directory_depth};")
+                          f"- {top_directory_depth};")
         # Special case of root directory
-        if top_directory == "":
+        if top_directory_stripped == "":
             query = "update index set depth = 0 where path = '.' or path = '';"
             self.conn.execute(query)
 
@@ -132,7 +132,7 @@ class DUDB(object):
             print('=' * 80)
 
         results = []
-        for depth in range(max_depth+1):
+        for depth in range(min_depth, max_depth+1):
             # Select all directories of current depth
             self.conn.execute(f"select path from index where depth = {depth} "
                               f"and is_dir = 1 and path like "
