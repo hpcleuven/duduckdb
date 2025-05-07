@@ -94,7 +94,7 @@ class DUDB(object):
         logging.debug(f'... done, took {time.time() - tstart:.3f}s')
 
     def report_du(self, top_directory="", per_user=False, older_than=None,
-                  newer_than=None, max_depth=1, metrics=['size'],
+                  newer_than=None, max_depth=1, min_depth=0, metrics=['size'],
                   human_readable=False, si_units=False,
                   timestamp_type='atime', suppress_output=False):
         # Check that required columns are present
@@ -132,7 +132,7 @@ class DUDB(object):
             print('=' * 80)
 
         results = []
-        for depth in range(max_depth+1):
+        for depth in range(min_depth, max_depth+1):
             # Select all directories of current depth
             self.conn.execute(f"select path from index where depth = {depth} "
                               f"and is_dir = 1 and path like "
