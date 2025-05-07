@@ -42,6 +42,10 @@ def parse_args():
     arg_parser.add_argument('--per-user', help='Print a separate line '
                             'indicating usage per user (based on ownership)',
                             action='store_true')
+    arg_parser.add_argument('--sort-by', help='Comma-separated list of '
+                            'properties to sort the output, possible values: '
+                            'depth,size,inodes,path,user',
+                            default='depth,size')
 
     input_timefmt = '%Y-%m-%d'
     arg_parser.add_argument('--older-than', help='Only take files/directories'
@@ -74,6 +78,9 @@ def parse_args():
     else:
         args.newer_than = datetime.strptime(args.newer_than, input_timefmt)
 
+    # Convert comma-separated list into Python list
+    args.sort_by = args.sort_by.split(',')
+
     # Set up logging
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -92,6 +99,6 @@ if __name__ == '__main__':
     db.report_du(top_directory=args.top_directory, per_user=args.per_user,
                  older_than=args.older_than, newer_than=args.newer_than,
                  max_depth=args.max_depth, min_depth=args.min_depth,
-                 metrics=metrics,
+                 metrics=metrics, sort_by=args.sort_by,
                  human_readable=args.human_readable, si_units=args.si_units,
                  timestamp_type=args.timestamp_type)
