@@ -36,10 +36,9 @@ def parse_args():
                             action='store_true')
     arg_parser.add_argument('--top-directory', help='Consider the provided '
                             'directory as the top directory, defaults to the '
-                            'root of the indexed tree. Note that the depth is'
-                            ' always counted from the root, so it might be '
-                            'required to increase the --max-depth argument '
-                            'when specifying a top directory', default='')
+                            'root of the indexed tree. The depth is '
+                            'counted from the provided top directory',
+                            default='')
     arg_parser.add_argument('--per-user', help='Print a separate line '
                             'indicating usage per user (based on ownership)',
                             action='store_true')
