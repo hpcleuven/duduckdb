@@ -181,6 +181,9 @@ class DUDB(object):
                 assert min_depth == max_depth, \
                     ('When sorting by user, only a single depth can be '
                      'considered')
+            elif per_user:
+                assert 'depth' in sort_by, \
+                    'When reporting per user, sorting has to include depth'
 
             # Sort the obtained results
             results = self.sort_list(results, columns, sort_by)
