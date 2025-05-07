@@ -96,7 +96,8 @@ class DUDB(object):
     def report_du(self, top_directory="", per_user=False, older_than=None,
                   newer_than=None, max_depth=1, min_depth=0, metrics=['size'],
                   human_readable=False, si_units=False,
-                  timestamp_type='atime', suppress_output=False):
+                  timestamp_type='atime', suppress_output=False,
+                  sort_by=['depth', 'size']):
         # Check that required columns are present
         required_columns = ['path', 'is_dir', 'size']
         if per_user:
@@ -151,13 +152,7 @@ class DUDB(object):
                         metrics, pattern, older_than=older_than,
                         newer_than=newer_than, timestamp_type=timestamp_type,
                     )
-                if not suppress_output:
-                    suffixes = ["" if m == "inodes" else "B" for m in metrics]
-                    print_usage_single(sizes, basedir,
-                                       human_readable=human_readable,
-                                       si_units=si_units,
-                                       suffixes=suffixes)
-                results.append([basedir] + sizes)
+                results.append([basedir, 'ALL', depth] + sizes)
 
                 # Print usage for each user separately
                 if per_user:
@@ -167,8 +162,6 @@ class DUDB(object):
                     uids_str = ",".join([f'{uid}' for uid in uids])
                     logging.debug(f'Users with files inside {basedir}: '
                                   f'{uids_str}')
-                    if not suppress_output:
-                        print('-' * 80)
                     for uid in uids:
                         sizes = self.query_metrics(
                             metrics, pattern, older_than=older_than,
@@ -176,15 +169,107 @@ class DUDB(object):
                             timestamp_type=timestamp_type
                         )
                         username = pwd.getpwuid(uid).pw_name
-                        if not suppress_output:
-                            print_usage_single(sizes, username,
-                                               human_readable=human_readable,
-                                               si_units=si_units,
-                                               prefix=" " * 4,
-                                               suffixes=suffixes)
-                    if not suppress_output:
-                        print('-' * 80)
+                        results.append([basedir, username, depth] + sizes)
+        if not suppress_output:
+            suffixes = ["" if m == "inodes" else "B" for m in metrics]
+            columns = ['path', 'user', 'depth'] + metrics
+
+            # Some sanity checks befor sorting
+            if 'user' in sort_by:
+                assert per_user, ('When sorting by user, '
+                                  'per_user has to be True')
+                assert min_depth == max_depth, \
+                    ('When sorting by user, only a single depth can be '
+                     'considered')
+
+            # Sort the obtained results
+            results = self.sort_list(results, columns, sort_by)
+
+            for res in results:
+                basedir = res[0]
+                username = res[1]
+                depth = res[2]
+                sizes = res[3:]
+                print_usage_single(
+                    sizes, basedir if username == 'ALL' else username,
+                    human_readable=human_readable, si_units=si_units,
+                    prefix=" " * (0 if username == 'ALL' else 4),
+                    suffixes=suffixes
+                )
+                if per_user and username == 'ALL':
+                    print('-' * 80)
+
         return results
+
+    def sort_list(self, results, columns, sortby):
+        """
+        Sorts a list of result tuples based on specified columns and sort
+        order.
+
+        Parameters:
+        - results (list): The list of result tuples to be sorted.
+        - columns (list): The list of column names corresponding to the values
+          in each tuple.
+        - sortby (list): The list of column names to sort by, in order of
+          priority.
+
+        Returns:
+        - list: A new list sorted based on the specified columns and order.
+
+        Raises:
+        - AssertionError: If a column in sortby is not found in columns.
+        """
+
+        class Sorter:
+            """A helper class to define sorting logic based on column indices
+               and comparator classes."""
+
+            def __init__(self, columns, sortby):
+                self.keys = []
+                for ikey, key in enumerate(sortby):
+                    # Ensure the sort key exists in the columns
+                    assert key in columns, \
+                        (f"Impossible to sort by {key}, "
+                         f"it is not in the columns {columns}")
+
+                    # Determine the comparator class based on the column type
+                    if key in ['size', 'inodes']:
+                        # Reverse sorting for 'size' and 'inodes'
+                        self.keys.append((columns.index(key), reversor))
+                    else:
+                        # Normal sorting for other columns
+                        self.keys.append((columns.index(key), versor))
+
+            def sort(self, res):
+                """Creates a list of comparator objects for sorting."""
+                return [cls(res[ikey]) for ikey, cls in self.keys]
+
+        class comparator:
+            """Base comparator class to define equality comparison based on
+            the wrapped object."""
+
+            def __init__(self, obj):
+                self.obj = obj
+
+            def __eq__(self, other):
+                return other.obj == self.obj
+
+        class reversor(comparator):
+            """Comparator class for reverse sorting."""
+            def __lt__(self, other):
+                return other.obj < self.obj  # Reversed comparison logic
+
+        class versor(comparator):
+            """Comparator class for normal sorting."""
+            def __lt__(self, other):
+                return other.obj > self.obj  # Normal comparison logic
+
+        # Instantiate a Sorter object with the specified columns and sort order
+        sorter = Sorter(columns, sortby)
+
+        # Sort the list using the Sorter object's sort method as the key
+        sorted_list = sorted(results, key=sorter.sort)
+        return sorted_list
 
     def query_metrics(self, metrics, pattern, older_than=None,
                       newer_than=None, uid=None, timestamp_type=None):
