@@ -32,8 +32,8 @@ Use the `--help` flag to get an overview of the possible command line options:
 
 ```
 $ duduckdb --help
-usage: duduckdb [-h] [-d MAX_DEPTH] [--disk-usage | --no-disk-usage] [--inodes | --no-inodes] [--human-readable] [--si-units] [--top-directory TOP_DIRECTORY] [--per-user]
-                [--older-than OLDER_THAN] [--newer-than NEWER_THAN] [--timestamp-type {atime,mtime,ctime}] [--nthreads NTHREADS] [--debug]
+usage: duduckdb [-h] [-d MAX_DEPTH] [--min-depth MIN_DEPTH] [--disk-usage | --no-disk-usage] [--inodes | --no-inodes] [--human-readable] [--si-units] [--top-directory TOP_DIRECTORY]
+                [--per-user] [--sort-by SORT_BY] [--older-than OLDER_THAN] [--newer-than NEWER_THAN] [--timestamp-type {atime,mtime,ctime}] [--nthreads NTHREADS] [--debug]
                 fn
 
 Summarize disk usage information contained in parquet file.
@@ -48,8 +48,8 @@ $ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet
 directory:               size             inodes
 ================================================================================
 :                        3268758550858    132323
-subdir1:                74795247         165
 subdir2:                2964581439838    13079
+subdir1:                74795247         165
 subdir3:                1864536          34
 ...
 ```
@@ -61,8 +61,8 @@ $ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human-
 directory:               size             inodes
 ================================================================================
 :                        3.0TiB           129.2Ki
-subdir1:                71.3MiB          165.0
 subdir2:                2.7TiB           12.8Ki
+subdir1:                71.3MiB          165.0
 subdir3:                1.8MiB           34.0
 ...
 ```
@@ -76,9 +76,25 @@ directory:               size             inodes
 :                       3.0TiB           129.2Ki
 subdir1:                71.3MiB          165.0
 ...
-subdir2/subdir1_1:      7.5GiB           405.0
 subdir2/subdir1_2:      465.7GiB         2.5Ki
 subdir2/subdir1_3:      46.6GiB          2.5Ki
+subdir2/subdir1_1:      7.5GiB           405.0
+...
+```
+
+The sorting can be controlled with the `--sort-by` option. It defaults to
+`depth,size`, which means output lines are first sorted by depth and within
+each depth by size (descending). If you want to sort for instance by number
+of inodes for each depth:
+
+```
+$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human-readable --sort-by=depth,inodes
+directory:               size             inodes
+================================================================================
+:                        3.0TiB           129.2Ki
+subdir2:                2.7TiB           12.8Ki
+subdir1:                71.3MiB          165.0
+subdir3:                1.8MiB           34.0
 ...
 ```
 
@@ -91,10 +107,10 @@ directory:               size             inodes
 :                        3.0TiB           129.2Ki
 --------------------------------------------------------------------------------
     vsc_id1:             2.8TiB           17.3Ki
+    vsc_id5:             159.0GiB         14.0
     vsc_id2:             45.8GiB          111.9Ki
     vsc_id3:             12.0KiB          4.0
     vsc_id4:             16.0KiB          13.0
-    vsc_id5:             159.0GiB         14.0
     vsc_id6:             4.0KiB           1.0
 ...
 ```

@@ -19,7 +19,7 @@ def parse_args():
                             'the top directory, defaults to 1',
                             default=1, type=int)
     arg_parser.add_argument('--min-depth', help='Print total for a '
-                            'directory only if it is at least N levels above '
+                            'directory only if it is at least N levels below '
                             'the top directory, defaults to 0',
                             default=0, type=int)
     arg_parser.add_argument('--disk-usage', help='Include the disk usage',
@@ -42,6 +42,15 @@ def parse_args():
     arg_parser.add_argument('--per-user', help='Print a separate line '
                             'indicating usage per user (based on ownership)',
                             action='store_true')
+    arg_parser.add_argument('--sort-by', help='Comma-separated list of '
+                            'properties to sort the output, possible values: '
+                            'depth,size,inodes,path,user. If "user" is '
+                            'included, it is mandatory to set --min-depth=0, '
+                            '--max-depth=0 and --per-user. If that is not '
+                            'the case, supplied values will be overriden. To '
+                            'query at another depth and sort by "user", '
+                            'specify the --top-directory',
+                            default='depth,path')
 
     input_timefmt = '%Y-%m-%d'
     arg_parser.add_argument('--older-than', help='Only take files/directories'
@@ -74,9 +83,27 @@ def parse_args():
     else:
         args.newer_than = datetime.strptime(args.newer_than, input_timefmt)
 
+    # Convert comma-separated list into Python list
+    args.sort_by = args.sort_by.split(',')
+
     # Set up logging
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
+
+    # Override some options in case sorting by user was requested
+    if 'user' in args.sort_by:
+        if args.min_depth != 0:
+            logging.warning('Overriding --min-depth to 0 because "user" is '
+                            'included in --sort-by')
+            args.min_depth = 0
+        if args.max_depth != 0:
+            logging.warning('Overriding --max-depth to 0 because "user" is '
+                            'included in --sort-by')
+            args.max_depth = 0
+        if not args.per_user:
+            logging.warning('Setting --per-user because "user" is included '
+                            'in --sort-by')
+            args.per_user = True
 
     return args
 
@@ -92,6 +119,6 @@ if __name__ == '__main__':
     db.report_du(top_directory=args.top_directory, per_user=args.per_user,
                  older_than=args.older_than, newer_than=args.newer_than,
                  max_depth=args.max_depth, min_depth=args.min_depth,
-                 metrics=metrics,
+                 metrics=metrics, sort_by=args.sort_by,
                  human_readable=args.human_readable, si_units=args.si_units,
                  timestamp_type=args.timestamp_type)
