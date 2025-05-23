@@ -19,7 +19,7 @@ def parse_args():
                             'the top directory, defaults to 1',
                             default=1, type=int)
     arg_parser.add_argument('--min-depth', help='Print total for a '
-                            'directory only if it is at least N levels above '
+                            'directory only if it is at least N levels below '
                             'the top directory, defaults to 0',
                             default=0, type=int)
     arg_parser.add_argument('--disk-usage', help='Include the disk usage',
