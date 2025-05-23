@@ -45,7 +45,7 @@ def parse_args():
     arg_parser.add_argument('--sort-by', help='Comma-separated list of '
                             'properties to sort the output, possible values: '
                             'depth,size,inodes,path,user',
-                            default='depth,size')
+                            default='depth,path')
 
     input_timefmt = '%Y-%m-%d'
     arg_parser.add_argument('--older-than', help='Only take files/directories'
