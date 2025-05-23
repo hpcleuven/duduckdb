@@ -178,9 +178,11 @@ class DUDB(object):
             if 'user' in sort_by:
                 assert per_user, ('When sorting by user, '
                                   'per_user has to be True')
+                assert min_depth == 0, \
+                    ('When sorting by user, min_depth has to be 0')
                 assert min_depth == max_depth, \
                     ('When sorting by user, only a single depth can be '
-                     'considered')
+                     'considered, so min_depth has to be equal to max_depth')
             elif per_user:
                 assert 'depth' in sort_by, \
                     'When reporting per user, sorting has to include depth'

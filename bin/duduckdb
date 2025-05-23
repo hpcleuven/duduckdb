@@ -44,7 +44,12 @@ def parse_args():
                             action='store_true')
     arg_parser.add_argument('--sort-by', help='Comma-separated list of '
                             'properties to sort the output, possible values: '
-                            'depth,size,inodes,path,user',
+                            'depth,size,inodes,path,user. If "user" is '
+                            'included, it is mandatory to set --min-depth=0, '
+                            '--max-depth=0 and --per-user. If that is not '
+                            'the case, supplied values will be overriden. To '
+                            'query at another depth and sort by "user", '
+                            'specify the --top-directory',
                             default='depth,path')
 
     input_timefmt = '%Y-%m-%d'
@@ -84,6 +89,21 @@ def parse_args():
     # Set up logging
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
+
+    # Override some options in case sorting by user was requested
+    if 'user' in args.sort_by:
+        if args.min_depth != 0:
+            logging.warning('Overriding --min-depth to 0 because "user" is '
+                            'included in --sort-by')
+            args.min_depth = 0
+        if args.max_depth != 0:
+            logging.warning('Overriding --max-depth to 0 because "user" is '
+                            'included in --sort-by')
+            args.max_depth = 0
+        if not args.per_user:
+            logging.warning('Setting --per-user because "user" is included '
+                            'in --sort-by')
+            args.per_user = True
 
     return args
 
