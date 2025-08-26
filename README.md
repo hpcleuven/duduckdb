@@ -15,7 +15,7 @@ queries from users that are part of the matching staging group.
 
 ## Getting started
 
-duduckdb is available as a module on the cluster (currently only on the login node):
+duduckdb is available as a module on the cluster:
 
 ```
 $ module load duduckdb
@@ -135,6 +135,9 @@ subdir3:                 1.8MiB           30.0
 As this tool relies on making a copy of the parquet database in memory. If you need
 to run multiple queries, you can avoid recreating the database each time by making
 use of the duduckdb Python interface:
+
+**Note:** If you plan on executing multiple queries this way, consider requesting
+a(n interactive) job. 
 
 ```
 $ python3
