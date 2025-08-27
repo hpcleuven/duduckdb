@@ -21,6 +21,10 @@ duduckdb is available as a module on the cluster:
 $ module load duduckdb
 ```
 
+While the module is available on the login node, in most cases it is recommended to
+perform your queries in a(n interactive) job as duduckdb tends to require a lot of
+memory for larger databases.
+
 Note that this repository contains the duduckdb package itself, which allows you to
 install it in your own directories as well. Unless you are trying out a newer version
 not available on the cluster, or developing on this code, there is no real need for
@@ -135,9 +139,6 @@ subdir3:                 1.8MiB           30.0
 As this tool relies on making a copy of the parquet database in memory. If you need
 to run multiple queries, you can avoid recreating the database each time by making
 use of the duduckdb Python interface:
-
-**Note:** If you plan on executing multiple queries this way, consider requesting
-a(n interactive) job. 
 
 ```
 $ python3
