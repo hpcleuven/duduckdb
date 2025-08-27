@@ -15,11 +15,15 @@ queries from users that are part of the matching staging group.
 
 ## Getting started
 
-duduckdb is available as a module on the cluster (currently only on the login node):
+duduckdb is available as a module on the cluster:
 
 ```
 $ module load duduckdb
 ```
+
+While the module is available on the login node, in most cases it is recommended to
+perform your queries in a(n interactive) job as duduckdb tends to require a lot of
+memory for larger databases.
 
 Note that this repository contains the duduckdb package itself, which allows you to
 install it in your own directories as well. Unless you are trying out a newer version
