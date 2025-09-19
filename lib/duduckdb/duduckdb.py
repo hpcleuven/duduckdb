@@ -168,7 +168,11 @@ class DUDB(object):
                             newer_than=newer_than, uid=uid,
                             timestamp_type=timestamp_type
                         )
-                        username = pwd.getpwuid(uid).pw_name
+                        try:
+                            username = pwd.getpwuid(uid).pw_name
+                        except KeyError:
+                            logging.warning(f'Failed to look up uid {uid}')
+                            username = str(uid)
                         results.append([basedir, username, depth] + sizes)
         if not suppress_output:
             suffixes = ["" if m == "inodes" else "B" for m in metrics]
