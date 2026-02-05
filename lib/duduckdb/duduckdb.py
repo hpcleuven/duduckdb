@@ -307,5 +307,9 @@ class DUDB(object):
 
             # Get value
             self.conn.execute(query)
-            sizes.append(self.conn.fetchone()[0])
+            result = self.conn.fetchone()[0]
+            # When nothing is found, this should be interpreted as 0
+            if result is None:
+                result = 0
+            sizes.append(result)
         return sizes
