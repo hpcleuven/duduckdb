@@ -135,21 +135,28 @@ class DUDB(object):
         results = []
         for depth in range(min_depth, max_depth+1):
             # Select all directories of current depth
+            if top_directory_stripped == '':
+                top_directory_rule = 'true'
+            else:
+                pattern = f'^{top_directory_stripped}(/.*)?$'
+                top_directory_rule = f"regexp_full_match(path, '{pattern}')"
+
             self.conn.execute(f"select path from index where depth = {depth} "
-                              f"and is_dir = 1 and path like "
-                              f"'{top_directory}%';")
+                              f"and is_dir = 1 and {top_directory_rule};")
             subdirectories = [dn[0] for dn in self.conn.fetchall()]
             logging.debug(f'Found {len(subdirectories)} directories at level '
                           f'{depth}')
+
             for basedir in subdirectories:
                 # Root directory has to be treated in a special way
                 if basedir == '.':
-                    pattern = '%'
+                    basedir_rule = 'true'
                 else:
-                    pattern = f"{basedir}%"
+                    pattern = f'^{basedir}(/.*)?$'
+                    basedir_rule = f"regexp_full_match(path, '{pattern}')"
 
                 sizes = self.query_metrics(
-                        metrics, pattern, older_than=older_than,
+                        metrics, basedir_rule, older_than=older_than,
                         newer_than=newer_than, timestamp_type=timestamp_type,
                     )
                 results.append([basedir, 'ALL', depth] + sizes)
@@ -157,14 +164,14 @@ class DUDB(object):
                 # Print usage for each user separately
                 if per_user:
                     self.conn.execute("select distinct uid from index where "
-                                      f"path like '{pattern}';")
+                                      f"{basedir_rule};")
                     uids = [uid[0] for uid in self.conn.fetchall()]
                     uids_str = ",".join([f'{uid}' for uid in uids])
                     logging.debug(f'Users with files inside {basedir}: '
                                   f'{uids_str}')
                     for uid in uids:
                         sizes = self.query_metrics(
-                            metrics, pattern, older_than=older_than,
+                            metrics, basedir_rule, older_than=older_than,
                             newer_than=newer_than, uid=uid,
                             timestamp_type=timestamp_type
                         )
@@ -280,7 +287,7 @@ class DUDB(object):
         sorted_list = sorted(results, key=sorter.sort)
         return sorted_list
 
-    def query_metrics(self, metrics, pattern, older_than=None,
+    def query_metrics(self, metrics, path_rule, older_than=None,
                       newer_than=None, uid=None, timestamp_type=None):
         sizes = []
         for metric in metrics:
@@ -292,8 +299,7 @@ class DUDB(object):
                 raise NotImplementedError(f'Unknown metric {metric}')
 
             # Print usage for this directory
-            query = f"select {qmetric}(size) from index where path " \
-                    f"like '{pattern}'"
+            query = f"select {qmetric}(size) from index where {path_rule}"
 
             # Filter based on timestamp
             if older_than:
