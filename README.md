@@ -7,11 +7,13 @@ Unix tool. A crucial difference is that instead of directly querying a file
 system, information is read from a parquet file containing an index of the
 directory in question.
 
-For each of the existing staging directories, we generate such a parquet
-database. You can find all databases in `/data/leuven/public/staging-stats`.
-Note that the owner and group from your staging storage is automatically assigned
+For each of the existing project storage directories, we generate such a parquet
+database. You can find all databases in `/data/leuven/public/project-storage-stats/lustre1`
+and `/data/leuven/public/project-storage-stats/gpfs1` for Lustre1 projects
+(also known as "staging" directories) and GPFS1 projects.
+Note that the owner and group from your project storage is automatically assigned
 to the database as well. Together with limited permissions, this only allows
-queries from users that are part of the matching staging group.
+queries from users that are part of the matching project storage group.
 
 ## Getting started
 
@@ -45,10 +47,13 @@ Summarize disk usage information contained in parquet file.
 ```
 
 Without any optional arguments, you get disk usage in bytes and inode count
-for the root directory and each of its subdirectories:
+for the root directory and each of its subdirectories (in all examples
+below, replace `<storage-name>` with `lustre1` or `gpfs1` and
+`<your-project-storage-dir>` with something like `stg_00001` or `prj_00001`,
+depending on your case):
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet
 directory:               size             inodes
 ================================================================================
 :                        3268758550858    132323
@@ -61,7 +66,7 @@ subdir3:                1864536          34
 The sizes will be nicer to read by supplying `--human-readable`:
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human-readable
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet --human-readable
 directory:               size             inodes
 ================================================================================
 :                        3.0TiB           129.2Ki
@@ -74,7 +79,7 @@ subdir3:                1.8MiB           34.0
 Deeper directories can be listed by increasing `--max-depth`:
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human-readable --max-depth=2
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet --human-readable --max-depth=2
 directory:               size             inodes
 ================================================================================
 :                       3.0TiB           129.2Ki
@@ -92,7 +97,7 @@ each depth by size (descending). If you want to sort for instance by number
 of inodes for each depth:
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human-readable --sort-by=depth,inodes
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet --human-readable --sort-by=depth,inodes
 directory:               size             inodes
 ================================================================================
 :                        3.0TiB           129.2Ki
@@ -105,7 +110,7 @@ subdir3:                1.8MiB           34.0
 With `--per-user`, usage per user is reported:
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --per-user --human-readable
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet --per-user --human-readable
 directory:               size             inodes
 ================================================================================
 :                        3.0TiB           129.2Ki
@@ -124,7 +129,7 @@ and `--newer-than`. Note that a line is printed for a directory in case *any*
 if the files/directories inside it passes this filter:
 
 ```
-$ duduckdb /data/leuven/public/staging-stats/<your-staging-dir>.parquet --human --older-than=2023-01-01
+$ duduckdb /data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet --human --older-than=2023-01-01
 directory:               size             inodes
 ================================================================================
 :                        159.0GiB         42.0
@@ -143,7 +148,7 @@ use of the duduckdb Python interface:
 ```
 $ python3
 from duduckdb.duduckdb import DUDB
-db = DUDB("/data/leuven/public/staging-stats/<your-staging-dir>.parquet")
+db = DUDB("/data/leuven/public/project-storage-stats/<storage-name>/<your-project-storage-dir>.parquet")
 db.report_du(max_depth=2, metrics=['size', 'inodes'])
 from datetime import datetime
 db.report_du(older_than=datetime(2022, 1, 1), timestamp_type='atime', max_depth=1, human_readable=True)
