@@ -126,6 +126,7 @@ class DUDB(object):
             query = "update index set depth = 0 where path = '.' or path = '';"
             self.conn.execute(query)
 
+
         # Print column headers
         if not suppress_output:
             print_usage_single(metrics, "directory",
@@ -149,7 +150,7 @@ class DUDB(object):
 
             for basedir in subdirectories:
                 # Root directory has to be treated in a special way
-                if basedir == '.':
+                if basedir in ['',  '.']:
                     basedir_rule = 'true'
                 else:
                     pattern = f'^{basedir}(/.*)?$'
